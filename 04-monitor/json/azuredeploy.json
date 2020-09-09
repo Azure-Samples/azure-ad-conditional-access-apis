@@ -1,0 +1,1314 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "301_conditionalaccess_alerts_automation",
+            "location": "[resourceGroup().location]",    
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "AutoPilotConditionalAccessKeyVaultClientCredentials": {
+                            "defaultValue": "https://conditionalaccessapi.vault.azure.net/secrets/CAAPISecret/5cabc0534679485da9d86f72f59c419c",
+                            "type": "String"
+                        },
+                        "ClientID": {
+                            "defaultValue": "74ee4ba5-0209-483b-b523-f312c22894fd",
+                            "type": "String"
+                        },
+                        "TenantID": {
+                            "defaultValue": "92f162f8-5a09-476c-9b4d-e3a4d6c8abe7",
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "manual": {
+                            "type": "Request",
+                            "kind": "Http",
+                            "inputs": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Audit_logs_endpoint_for_conditional_access_policies": {
+                            "runAfter": {
+                                "Parse_Conditional_Access_Alert_Message": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "URL",
+                                        "type": "string",
+                                        "value": "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?$orderby=activityDateTime asc&$filter=Category eq 'Policy' and activityDateTime le  @{body('Parse_Conditional_Access_Alert_Message')?['data']?['alertContext']?['SearchIntervalEndtimeUtc']} and activityDateTime ge @{body('Parse_Conditional_Access_Alert_Message')?['data']?['alertContext']?['SearchIntervalStartTimeUtc']}"
+                                    }
+                                ]
+                            }
+                        },
+                        "Condition": {
+                            "actions": {
+                                "For_each": {
+                                    "foreach": "@body('Parse_Audit_Logs_retrieved_for_CRUD_operations_on_Conditional_Access_Policies')?['value']",
+                                    "actions": {
+                                        "Condition_3": {
+                                            "actions": {
+                                                "For_each_2": {
+                                                    "foreach": "@body('Filter_array')",
+                                                    "actions": {
+                                                        "Check_if_the_Conditional_Access_Policy_still_exist_and_is_not_deleted": {
+                                                            "actions": {
+                                                                "Check_if_admin_reports_to_investigates_Conditional_Access_policy_change": {
+                                                                    "actions": {
+                                                                        "Send_an_email_to_compliance_team_for_investigation": {
+                                                                            "runAfter": {},
+                                                                            "type": "ApiConnection",
+                                                                            "inputs": {
+                                                                                "body": {
+                                                                                    "Body": "<p>Please investgate a suspicious change to Conditional Access Policy.<br>\n<br>\n<strong><br>\nConditional Access Policy ID: </strong><strong>@{items('For_each_2')?['id']}</strong><strong><br>\n<br>\nConditional Access Policy Name: &nbsp;</strong><strong>@{items('For_each_2')?['displayName']}</strong><strong><br>\n<br>\nModified Time: &nbsp;</strong><strong>@{body('Parse_Audit_Logs')?['activityDateTime']}</strong><strong><br>\n<br>\nModified By: &nbsp;</strong><strong>@{body('Parse_Audit_Logs')?['initiatedBy']?['user']?['userPrincipalName']}</strong><strong><br>\n<br>\nChange Type: &nbsp;</strong><strong>@{body('Parse_Audit_Logs')?['activityDisplayName']}</strong><strong><br>\n<br>\n</strong></p>",
+                                                                                    "From": "admin@ContosoBankplc.onmicrosoft.com",
+                                                                                    "Subject": "Investigate suspicious Conditional Access Policy change!",
+                                                                                    "To": "admin@ContosoBankplc.onmicrosoft.com"
+                                                                                },
+                                                                                "host": {
+                                                                                    "connection": {
+                                                                                        "name": "@parameters('$connections')['office365']['connectionId']"
+                                                                                    }
+                                                                                },
+                                                                                "method": "post",
+                                                                                "path": "/v2/Mail"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "runAfter": {
+                                                                        "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "expression": {
+                                                                        "and": [
+                                                                            {
+                                                                                "equals": [
+                                                                                    "@body('Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response')?['data']?['action']",
+                                                                                    "reject"
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type": "If"
+                                                                },
+                                                                "Parse_the_Conditional_Access_Policy_to_Alert_On": {
+                                                                    "runAfter": {},
+                                                                    "type": "ParseJson",
+                                                                    "inputs": {
+                                                                        "content": "@body('Get_the_Policy_with_CRUD_operation')",
+                                                                        "schema": {
+                                                                            "properties": {
+                                                                                "@@odata.context": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "conditions": {
+                                                                                    "properties": {
+                                                                                        "applications": {
+                                                                                            "properties": {
+                                                                                                "excludeApplications": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeApplications": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeUserActions": {
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "clientAppTypes": {
+                                                                                            "items": {
+                                                                                                "type": [
+                                                                                                    "string",
+                                                                                                    "null"
+                                                                                                ]
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "array",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "locations": {
+                                                                                            "properties": {
+                                                                                                "excludeLocations": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeLocations": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "platforms": {
+                                                                                            "properties": {
+                                                                                                "excludePlatforms": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includePlatforms": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "signInRiskLevels": {
+                                                                                            "items": {
+                                                                                                "type": [
+                                                                                                    "string",
+                                                                                                    "null"
+                                                                                                ]
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "array",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "users": {
+                                                                                            "properties": {
+                                                                                                "excludeGroups": {
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "excludeRoles": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "excludeUsers": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeGroups": {
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeRoles": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "includeUsers": {
+                                                                                                    "items": {
+                                                                                                        "type": [
+                                                                                                            "string",
+                                                                                                            "null"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": [
+                                                                                                        "array",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    "type": [
+                                                                                        "object",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "createdDateTime": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "displayName": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "grantControls": {
+                                                                                    "properties": {
+                                                                                        "builtInControls": {
+                                                                                            "items": {
+                                                                                                "type": [
+                                                                                                    "string",
+                                                                                                    "null"
+                                                                                                ]
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "array",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "customAuthenticationFactors": {
+                                                                                            "type": [
+                                                                                                "array",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "operator": {
+                                                                                            "type": [
+                                                                                                "string",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "termsOfUse": {
+                                                                                            "items": {
+                                                                                                "type": [
+                                                                                                    "string",
+                                                                                                    "null"
+                                                                                                ]
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "array",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    "type": [
+                                                                                        "object",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "id": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "modifiedDateTime": {},
+                                                                                "sessionControls": {
+                                                                                    "properties": {
+                                                                                        "applicationEnforcedRestrictions": {},
+                                                                                        "cloudAppSecurity": {
+                                                                                            "properties": {
+                                                                                                "cloudAppSecurityType": {
+                                                                                                    "type": [
+                                                                                                        "string",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "isEnabled": {
+                                                                                                    "type": [
+                                                                                                        "boolean",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        },
+                                                                                        "persistentBrowser": {},
+                                                                                        "signInFrequency": {
+                                                                                            "properties": {
+                                                                                                "isEnabled": {
+                                                                                                    "type": [
+                                                                                                        "boolean",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "type": {
+                                                                                                    "type": [
+                                                                                                        "string",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                },
+                                                                                                "value": {
+                                                                                                    "type": [
+                                                                                                        "integer",
+                                                                                                        "null"
+                                                                                                    ]
+                                                                                                }
+                                                                                            },
+                                                                                            "type": [
+                                                                                                "object",
+                                                                                                "null"
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    "type": [
+                                                                                        "object",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "state": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "type": [
+                                                                                "object",
+                                                                                "null"
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": {
+                                                                    "runAfter": {
+                                                                        "Parse_the_Conditional_Access_Policy_to_Alert_On": [
+                                                                            "Succeeded"
+                                                                        ]
+                                                                    },
+                                                                    "type": "ApiConnectionWebhook",
+                                                                    "inputs": {
+                                                                        "body": {
+                                                                            "body": {
+                                                                                "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"https://raw.githubusercontent.com/videor/AutoPilotConditionalAccess/master/AutoPilotConditionalAccess/azure-quickstart-templates/301-conditionalaccess-alerts-automation/images/Alert.PNG\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Alert: Conditional Access policy change alert**\"\n                        },     \n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{items('For_each_2')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{items('For_each_2')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Activity Type\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['activityDisplayName']}\"\n                        },\n                        {\n                            \"title\": \"Activity Time\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['activityDateTime']}\"\n                        },\n                        {\n                            \"title\": \"Policy changed by\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['initiatedBy']?['user']?['userPrincipalName']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A new conditional access policy change has occured in your PROD environment. This alert requires acknowledgement from one of the members in this channel.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ActionSet\",\n                    \"actions\": [\n                        {\n                            \"type\": \"Action.Submit\",\n                            \"title\": \"Acknowledge as planned change to Conditional Access\",\n                            \"style\": \"positive\",\n                            \"data\": {\n                                \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                \"action\": \"approve\"\n                            }\n                        },\n                        {\n                            \"type\": \"Action.ShowCard\",\n                            \"title\": \"Notify compliance team for investigation\",\n                            \"style\": \"destructive\",\n                            \"card\": {\n                                \"type\": \"AdaptiveCard\",\n                                \"body\": [\n                                    {\n                                        \"type\": \"Input.Text\",\n                                        \"id\": \"RejectCommentID\",\n                                        \"placeholder\": \"Please specify an appropriate reason for why you think this is a suspicious policy change.\",\n                                        \"isMultiline\": true\n                                    }\n                                ],\n                                \"actions\": [\n                                    {\n                                        \"type\": \"Action.Submit\",\n                                        \"title\": \"Send\",\n                                        \"data\": {\n                                            \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                            \"action\": \"reject\"\n                                        }\n                                    }\n                                ],\n                                \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\"\n                            }\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                                                "recipient": {
+                                                                                    "channelId": "19:2e6d2913389947308c0616767218d43e@thread.tacv2"
+                                                                                },
+                                                                                "shouldUpdateCard": true,
+                                                                                "updateMessage": "Thanks for the acknowledgement."
+                                                                            },
+                                                                            "notificationUrl": "@{listCallbackUrl()}"
+                                                                        },
+                                                                        "host": {
+                                                                            "connection": {
+                                                                                "name": "@parameters('$connections')['teams_1']['connectionId']"
+                                                                            }
+                                                                        },
+                                                                        "path": "/flowbot/actions/flowcontinuation/recipienttypes/channel/$subscriptions",
+                                                                        "queries": {
+                                                                            "groupId": "3c107596-8ab2-4647-87f8-f245236530e4"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "runAfter": {
+                                                                "Get_the_Policy_with_CRUD_operation": [
+                                                                    "Succeeded",
+                                                                    "Failed",
+                                                                    "Skipped",
+                                                                    "TimedOut"
+                                                                ]
+                                                            },
+                                                            "else": {
+                                                                "actions": {
+                                                                    "Check_if_admin_reports_to_investigates_Conditional_Access_policy_change_further": {
+                                                                        "actions": {
+                                                                            "Send_an_email_to_compliance_team_for_further_investigation": {
+                                                                                "runAfter": {},
+                                                                                "type": "ApiConnection",
+                                                                                "inputs": {
+                                                                                    "body": {
+                                                                                        "Body": "<p>Please investgate a suspicious deletion of Conditional Access Policy.<br>\n<br>\n<strong>Conditional Access Policy ID</strong>: @{items('For_each_2')?['id']}<br>\n<br>\n<strong>Conditional Access Policy Name:</strong>  @{items('For_each_2')?['displayName']}<br>\n<br>\n<strong>Modified Time</strong>: &nbsp;@{body('Parse_Audit_Logs')?['activityDateTime']}<br>\n<br>\n<strong>Modified By: &nbsp;</strong>@{body('Parse_Audit_Logs')?['initiatedBy']?['user']?['userPrincipalName']}<br>\n<br>\n<strong>Change Type: </strong>&nbsp;@{body('Parse_Audit_Logs')?['activityDisplayName']}</p>",
+                                                                                        "From": "admin@ContosoBankplc.onmicrosoft.com",
+                                                                                        "Subject": "Investigate suspicious Conditional Access Policy change!",
+                                                                                        "To": "admin@ContosoBankplc.onmicrosoft.com"
+                                                                                    },
+                                                                                    "host": {
+                                                                                        "connection": {
+                                                                                            "name": "@parameters('$connections')['office365']['connectionId']"
+                                                                                        }
+                                                                                    },
+                                                                                    "method": "post",
+                                                                                    "path": "/v2/Mail"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        "runAfter": {
+                                                                            "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response_2": [
+                                                                                "Succeeded"
+                                                                            ]
+                                                                        },
+                                                                        "expression": {
+                                                                            "and": [
+                                                                                {
+                                                                                    "equals": [
+                                                                                        "@body('Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response_2')?['data']?['action']",
+                                                                                        "reject"
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "type": "If"
+                                                                    },
+                                                                    "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response_2": {
+                                                                        "runAfter": {},
+                                                                        "type": "ApiConnectionWebhook",
+                                                                        "inputs": {
+                                                                            "body": {
+                                                                                "body": {
+                                                                                    "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"https://raw.githubusercontent.com/videor/AutoPilotConditionalAccess/master/AutoPilotConditionalAccess/azure-quickstart-templates/301-conditionalaccess-alerts-automation/images/Alert.PNG\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Alert: Conditional Access policy delete alert**\"\n                        },     \n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{items('For_each_2')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{items('For_each_2')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Activity Type\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['activityDisplayName']}\"\n                        },\n                        {\n                            \"title\": \"Activity Time\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['activityDateTime']}\"\n                        },\n                        {\n                            \"title\": \"Policy changed by\",\n                            \"value\": \"@{body('Parse_Audit_Logs')?['initiatedBy']?['user']?['userPrincipalName']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"Conditional access policy was deleted in your PROD environment. This alert requires acknowledgement from one of the members in this channel.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ActionSet\",\n                    \"actions\": [\n                        {\n                            \"type\": \"Action.Submit\",\n                            \"title\": \"Acknowledge as planned change to Conditional Access\",\n                            \"style\": \"positive\",\n                            \"data\": {\n                                \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                \"action\": \"approve\"\n                            }\n                        },\n                        {\n                            \"type\": \"Action.ShowCard\",\n                            \"title\": \"Notify compliance team for investigation\",\n                            \"style\": \"destructive\",\n                            \"card\": {\n                                \"type\": \"AdaptiveCard\",\n                                \"body\": [\n                                    {\n                                        \"type\": \"Input.Text\",\n                                        \"id\": \"RejectCommentID\",\n                                        \"placeholder\": \"Investigate the change further by notifying compliance team.\",\n                                        \"isMultiline\": true\n                                    }\n                                ],\n                                \"actions\": [\n                                    {\n                                        \"type\": \"Action.Submit\",\n                                        \"title\": \"Send\",\n                                        \"data\": {\n                                            \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                            \"action\": \"reject\"\n                                        }\n                                    }\n                                ],\n                                \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\"\n                            }\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                                                    "recipient": {
+                                                                                        "channelId": "19:2e6d2913389947308c0616767218d43e@thread.tacv2"
+                                                                                    },
+                                                                                    "shouldUpdateCard": true,
+                                                                                    "updateMessage": "Thanks for the acknowledgement."
+                                                                                },
+                                                                                "notificationUrl": "@{listCallbackUrl()}"
+                                                                            },
+                                                                            "host": {
+                                                                                "connection": {
+                                                                                    "name": "@parameters('$connections')['teams_1']['connectionId']"
+                                                                                }
+                                                                            },
+                                                                            "path": "/flowbot/actions/flowcontinuation/recipienttypes/channel/$subscriptions",
+                                                                            "queries": {
+                                                                                "groupId": "3c107596-8ab2-4647-87f8-f245236530e4"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "expression": {
+                                                                "and": [
+                                                                    {
+                                                                        "equals": [
+                                                                            "@outputs('Get_the_Policy_with_CRUD_operation')['statusCode']",
+                                                                            200
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "type": "If"
+                                                        },
+                                                        "Get_the_Policy_with_CRUD_operation": {
+                                                            "runAfter": {},
+                                                            "type": "Http",
+                                                            "inputs": {
+                                                                "authentication": {
+                                                                    "audience": "https://graph.microsoft.com",
+                                                                    "clientId": "@parameters('ClientID')",
+                                                                    "secret": "@body('Parse_Response_from_Key_Vault')?['value']",
+                                                                    "tenant": "@parameters('TenantID')",
+                                                                    "type": "ActiveDirectoryOAuth"
+                                                                },
+                                                                "method": "GET",
+                                                                "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies/@{items('For_each_2')?['id']}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "runAfter": {},
+                                                    "type": "Foreach"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Filter_array": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "greaterOrEquals": [
+                                                            "@length(body('Filter_array'))",
+                                                            1
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "type": "If"
+                                        },
+                                        "Filter_array": {
+                                            "runAfter": {
+                                                "Parse_Audit_Logs": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Query",
+                                            "inputs": {
+                                                "from": "@body('Parse_Audit_Logs')?['targetResources']",
+                                                "where": "@not(startsWith(item()?['displayName'], 'Default Policy'))"
+                                            }
+                                        },
+                                        "Parse_Audit_Logs": {
+                                            "runAfter": {},
+                                            "type": "ParseJson",
+                                            "inputs": {
+                                                "content": "@items('For_each')",
+                                                "schema": {
+                                                    "properties": {
+                                                        "activityDateTime": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "activityDisplayName": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "additionalDetails": {
+                                                            "type": "array"
+                                                        },
+                                                        "category": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "correlationId": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "id": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "initiatedBy": {
+                                                            "properties": {
+                                                                "app": {},
+                                                                "user": {
+                                                                    "properties": {
+                                                                        "displayName": {},
+                                                                        "id": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "ipAddress": {},
+                                                                        "userPrincipalName": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "loggedByService": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "operationType": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "result": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "resultReason": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "targetResources": {
+                                                            "items": {
+                                                                "properties": {
+                                                                    "displayName": {
+                                                                        "type": [
+                                                                            "string",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "groupType": {},
+                                                                    "id": {
+                                                                        "type": [
+                                                                            "string",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "modifiedProperties": {
+                                                                        "items": {
+                                                                            "properties": {
+                                                                                "displayName": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "newValue": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                },
+                                                                                "oldValue": {
+                                                                                    "type": [
+                                                                                        "string",
+                                                                                        "null"
+                                                                                    ]
+                                                                                }
+                                                                            },
+                                                                            "required": [
+                                                                                "displayName",
+                                                                                "oldValue",
+                                                                                "newValue"
+                                                                            ],
+                                                                            "type": "object"
+                                                                        },
+                                                                        "type": "array"
+                                                                    },
+                                                                    "type": {
+                                                                        "type": [
+                                                                            "string",
+                                                                            "null"
+                                                                        ]
+                                                                    },
+                                                                    "userPrincipalName": {}
+                                                                },
+                                                                "type": "object"
+                                                            },
+                                                            "type": "array"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter": {},
+                                    "type": "Foreach"
+                                }
+                            },
+                            "runAfter": {
+                                "Parse_Audit_Logs_retrieved_for_CRUD_operations_on_Conditional_Access_Policies": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "greaterOrEquals": [
+                                            "@length(body('Parse_Audit_Logs_retrieved_for_CRUD_operations_on_Conditional_Access_Policies')?['value'])",
+                                            1
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "GET_Client_Secret_from_Key_Vault_using_Managed_Identity": {
+                            "runAfter": {
+                                "Audit_logs_endpoint_for_conditional_access_policies": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://vault.azure.net",
+                                    "identity": "ManagedServiceIdentity",
+                                    "type": "ManagedServiceIdentity"
+                                },
+                                "method": "GET",
+                                "queries": {
+                                    "api-version": "2016-10-01"
+                                },
+                                "uri": "@parameters('AutoPilotConditionalAccessKeyVaultClientCredentials')"
+                            }
+                        },
+                        "Get_Audit_Logs_for_CRUD_operations_on_Conditional_Access_Policies": {
+                            "runAfter": {
+                                "Parse_Response_from_Key_Vault": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://graph.microsoft.com",
+                                    "clientId": "@parameters('ClientID')",
+                                    "secret": "@body('Parse_Response_from_Key_Vault')?['value']",
+                                    "tenant": "@parameters('TenantID')",
+                                    "type": "ActiveDirectoryOAuth"
+                                },
+                                "method": "GET",
+                                "uri": "@variables('URL')"
+                            }
+                        },
+                        "Parse_Audit_Logs_retrieved_for_CRUD_operations_on_Conditional_Access_Policies": {
+                            "runAfter": {
+                                "Get_Audit_Logs_for_CRUD_operations_on_Conditional_Access_Policies": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('Get_Audit_Logs_for_CRUD_operations_on_Conditional_Access_Policies')",
+                                "schema": {
+                                    "properties": {
+                                        "value": {
+                                            "items": {
+                                                "properties": {
+                                                    "correlationId": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "correlationId"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Parse_Conditional_Access_Alert_Message": {
+                            "runAfter": {},
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@triggerBody()",
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "alertContext": {
+                                                    "properties": {
+                                                        "AffectedConfigurationItems": {
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "type": "array"
+                                                        },
+                                                        "AlertType": {
+                                                            "type": "string"
+                                                        },
+                                                        "IncludeSearchResults": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "IncludedSearchResults": {
+                                                            "type": "string"
+                                                        },
+                                                        "LinkToFilteredSearchResultsAPI": {
+                                                            "type": "string"
+                                                        },
+                                                        "LinkToFilteredSearchResultsUI": {
+                                                            "type": "string"
+                                                        },
+                                                        "LinkToSearchResults": {
+                                                            "type": "string"
+                                                        },
+                                                        "LinkToSearchResultsAPI": {
+                                                            "type": "string"
+                                                        },
+                                                        "Operator": {
+                                                            "type": "string"
+                                                        },
+                                                        "ResultCount": {
+                                                            "type": "integer"
+                                                        },
+                                                        "SearchIntervalDurationMin": {
+                                                            "type": "string"
+                                                        },
+                                                        "SearchIntervalEndtimeUtc": {
+                                                            "type": "string"
+                                                        },
+                                                        "SearchIntervalInMinutes": {
+                                                            "type": "string"
+                                                        },
+                                                        "SearchIntervalStartTimeUtc": {
+                                                            "type": "string"
+                                                        },
+                                                        "SearchQuery": {
+                                                            "type": "string"
+                                                        },
+                                                        "SearchResults": {
+                                                            "properties": {
+                                                                "dataSources": {
+                                                                    "items": {
+                                                                        "properties": {
+                                                                            "region": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "resourceId": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "tables": {
+                                                                                "items": {
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "type": "array"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "resourceId",
+                                                                            "region",
+                                                                            "tables"
+                                                                        ],
+                                                                        "type": "object"
+                                                                    },
+                                                                    "type": "array"
+                                                                },
+                                                                "statistics": {
+                                                                    "properties": {
+                                                                        "query": {
+                                                                            "properties": {
+                                                                                "datasetStatistics": {
+                                                                                    "items": {
+                                                                                        "properties": {
+                                                                                            "tableRowCount": {
+                                                                                                "type": "integer"
+                                                                                            },
+                                                                                            "tableSize": {
+                                                                                                "type": "integer"
+                                                                                            }
+                                                                                        },
+                                                                                        "required": [
+                                                                                            "tableRowCount",
+                                                                                            "tableSize"
+                                                                                        ],
+                                                                                        "type": "object"
+                                                                                    },
+                                                                                    "type": "array"
+                                                                                },
+                                                                                "executionTime": {
+                                                                                    "type": "number"
+                                                                                },
+                                                                                "inputDatasetStatistics": {
+                                                                                    "properties": {
+                                                                                        "extents": {
+                                                                                            "properties": {
+                                                                                                "scanned": {
+                                                                                                    "type": "integer"
+                                                                                                },
+                                                                                                "scannedMaxDatetime": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "scannedMinDatetime": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "total": {
+                                                                                                    "type": "integer"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        },
+                                                                                        "rows": {
+                                                                                            "properties": {
+                                                                                                "scanned": {
+                                                                                                    "type": "integer"
+                                                                                                },
+                                                                                                "total": {
+                                                                                                    "type": "integer"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        },
+                                                                                        "rowstores": {
+                                                                                            "properties": {
+                                                                                                "scannedRows": {
+                                                                                                    "type": "integer"
+                                                                                                },
+                                                                                                "scannedValuesSize": {
+                                                                                                    "type": "integer"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        },
+                                                                                        "shards": {
+                                                                                            "properties": {
+                                                                                                "queriesGeneric": {
+                                                                                                    "type": "integer"
+                                                                                                },
+                                                                                                "queriesSpecialized": {
+                                                                                                    "type": "integer"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        }
+                                                                                    },
+                                                                                    "type": "object"
+                                                                                },
+                                                                                "resourceUsage": {
+                                                                                    "properties": {
+                                                                                        "cache": {
+                                                                                            "properties": {
+                                                                                                "disk": {
+                                                                                                    "properties": {
+                                                                                                        "hits": {
+                                                                                                            "type": "integer"
+                                                                                                        },
+                                                                                                        "misses": {
+                                                                                                            "type": "integer"
+                                                                                                        },
+                                                                                                        "total": {
+                                                                                                            "type": "integer"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "type": "object"
+                                                                                                },
+                                                                                                "memory": {
+                                                                                                    "properties": {
+                                                                                                        "hits": {
+                                                                                                            "type": "integer"
+                                                                                                        },
+                                                                                                        "misses": {
+                                                                                                            "type": "integer"
+                                                                                                        },
+                                                                                                        "total": {
+                                                                                                            "type": "integer"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "type": "object"
+                                                                                                },
+                                                                                                "shards": {
+                                                                                                    "properties": {
+                                                                                                        "bypassbytes": {
+                                                                                                            "type": "integer"
+                                                                                                        },
+                                                                                                        "cold": {
+                                                                                                            "properties": {
+                                                                                                                "hitbytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                },
+                                                                                                                "missbytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                },
+                                                                                                                "retrievebytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "type": "object"
+                                                                                                        },
+                                                                                                        "hot": {
+                                                                                                            "properties": {
+                                                                                                                "hitbytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                },
+                                                                                                                "missbytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                },
+                                                                                                                "retrievebytes": {
+                                                                                                                    "type": "integer"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "type": "object"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "type": "object"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        },
+                                                                                        "cpu": {
+                                                                                            "properties": {
+                                                                                                "kernel": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "totalCpu": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "user": {
+                                                                                                    "type": "string"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        },
+                                                                                        "memory": {
+                                                                                            "properties": {
+                                                                                                "peakPerNode": {
+                                                                                                    "type": "integer"
+                                                                                                }
+                                                                                            },
+                                                                                            "type": "object"
+                                                                                        }
+                                                                                    },
+                                                                                    "type": "object"
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                },
+                                                                "tables": {
+                                                                    "items": {
+                                                                        "properties": {
+                                                                            "columns": {
+                                                                                "items": {
+                                                                                    "properties": {
+                                                                                        "name": {
+                                                                                            "type": "string"
+                                                                                        },
+                                                                                        "type": {
+                                                                                            "type": "string"
+                                                                                        }
+                                                                                    },
+                                                                                    "required": [
+                                                                                        "name",
+                                                                                        "type"
+                                                                                    ],
+                                                                                    "type": "object"
+                                                                                },
+                                                                                "type": "array"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "rows": {
+                                                                                "items": {
+                                                                                    "type": "array"
+                                                                                },
+                                                                                "type": "array"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "name",
+                                                                            "columns",
+                                                                            "rows"
+                                                                        ],
+                                                                        "type": "object"
+                                                                    },
+                                                                    "type": "array"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "SeverityDescription": {
+                                                            "type": "string"
+                                                        },
+                                                        "Threshold": {
+                                                            "type": "integer"
+                                                        },
+                                                        "WorkspaceId": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "essentials": {
+                                                    "properties": {
+                                                        "alertContextVersion": {
+                                                            "type": "string"
+                                                        },
+                                                        "alertId": {
+                                                            "type": "string"
+                                                        },
+                                                        "alertRule": {
+                                                            "type": "string"
+                                                        },
+                                                        "alertTargetIDs": {
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "type": "array"
+                                                        },
+                                                        "description": {
+                                                            "type": "string"
+                                                        },
+                                                        "essentialsVersion": {
+                                                            "type": "string"
+                                                        },
+                                                        "firedDateTime": {
+                                                            "type": "string"
+                                                        },
+                                                        "monitorCondition": {
+                                                            "type": "string"
+                                                        },
+                                                        "monitoringService": {
+                                                            "type": "string"
+                                                        },
+                                                        "originAlertId": {
+                                                            "type": "string"
+                                                        },
+                                                        "severity": {
+                                                            "type": "string"
+                                                        },
+                                                        "signalType": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "schemaId": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Parse_Response_from_Key_Vault": {
+                            "runAfter": {
+                                "GET_Client_Secret_from_Key_Vault_using_Managed_Identity": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('GET_Client_Secret_from_Key_Vault_using_Managed_Identity')",
+                                "schema": {
+                                    "properties": {
+                                        "attributes": {
+                                            "properties": {
+                                                "created": {
+                                                    "type": "integer"
+                                                },
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "recoveryLevel": {
+                                                    "type": "string"
+                                                },
+                                                "updated": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "office365": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]",
+                                "connectionName": "office365",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]"
+                            },
+                            "teams_1": {
+                              "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]",
+                                "connectionName": "teams-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

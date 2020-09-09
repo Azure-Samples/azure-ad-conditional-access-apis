@@ -1,0 +1,375 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {  
+    },
+    "variables": {},
+    "resources": [
+    {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "301-conditionalaccess-policy-copy-automation",
+            "location": "[resourceGroup().location]",    
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "AutoPilotConditionalAccessKeyVaultClientCredentials": {
+                            "defaultValue": "https://autopilotcavault2.vault.azure.net/secrets/AutoPilotConditionalAccessClientSecret/04e3b95b7f0e49dea10e4189b5374595",
+                            "type": "String"
+                        },
+                        "ClientID": {
+                            "defaultValue": "3ad0fe30-3640-4364-a39a-bd1fae04ac9a",
+                            "type": "String"
+                        },                      
+                        "TenantID": {
+                            "defaultValue": "638f6240-1182-4adb-a12a-fdb1c768d7f2",
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "Schedule_snapshot_of_pre-production_conditional_access_policies": {
+                            "recurrence": {
+                                "frequency": "Day",
+                                "interval": 1
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "Clear_snapshot": {
+                            "foreach": "@body('List_files_in_folder')?['value']",
+                            "actions": {
+                                "Delete_file": {
+                                    "runAfter": {},
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                            }
+                                        },
+                                        "method": "delete",
+                                        "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(items('Clear_snapshot')?['Id']))}"
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "List_files_in_folder": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "Delay": {
+                            "runAfter": {
+                                "Clear_snapshot": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Wait",
+                            "inputs": {
+                                "interval": {
+                                    "count": 1,
+                                    "unit": "Minute"
+                                }
+                            }
+                        },
+                        "For_each_conditional_access_policy": {
+                            "foreach": "@body('Parse_All_Conditional_Access_Policies')?['value']",
+                            "actions": {
+                                "Conditional_access_policy_json": {
+                                    "runAfter": {},
+                                    "type": "Compose",
+                                    "inputs": "@items('For_each_conditional_access_policy')"
+                                },
+                                "Create_file": {
+                                    "runAfter": {
+                                        "Conditional_access_policy_json": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "body": "@outputs('Conditional_access_policy_json')",
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "path": "/datasets/default/files",
+                                        "queries": {
+                                            "folderPath": "/ConditionalAccess/PPE",
+                                            "name": "[@{item()?['id']}] @{item()?['displayName']}.json"
+                                        }
+                                    },
+                                    "runtimeConfiguration": {
+                                        "contentTransfer": {
+                                            "transferMode": "Chunked"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Delay": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "GET_all_conditional_access_policies_": {
+                            "runAfter": {
+                                "Parse_response_from_key_vault": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://graph.microsoft.com",
+                                    "clientId": "@parameters('ClientID')",
+                                    "secret": "@body('Parse_response_from_key_vault')?['value']",
+                                    "tenant": "@parameters('TenantID')",
+                                    "type": "ActiveDirectoryOAuth"
+                                },
+                                "method": "GET",
+                                "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
+                            }
+                        },
+                        "GET_client_secret_from_key_vault_using_managed_identity": {
+                            "runAfter": {},
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://vault.azure.net",
+                                    "identity": "ManagedIdentity",
+                                    "type": "ManagedServiceIdentity"
+                                },
+                                "method": "GET",
+                                "queries": {
+                                    "api-version": "2016-10-01"
+                                },
+                                "uri": "@parameters('AutoPilotConditionalAccessKeyVaultClientCredentials')"
+                            }
+                        },
+                        "List_files_in_folder": {
+                            "runAfter": {
+                                "Parse_all_conditional_access_policies": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "metadata": {
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTBV7TVXZGINTNAIFX33NUW4LSHJ": "/ConditionalAccess/Pre-Production",
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTFLD3SDMVQRDNHZ2OMKFBOXMFLJ": "/ConditionalAccess/PPE"
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/datasets/default/foldersV2/@{encodeURIComponent(encodeURIComponent('b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTFLD3SDMVQRDNHZ2OMKFBOXMFLJ'))}",
+                                "queries": {
+                                    "skipToken": "",
+                                    "top": 20
+                                }
+                            },
+                            "runtimeConfiguration": {
+                                "paginationPolicy": {
+                                    "minimumItemCount": 195
+                                }
+                            }
+                        },
+                        "Parse_all_conditional_access_policies": {
+                            "runAfter": {
+                                "GET_all_conditional_access_policies_": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('GET_all_conditional_access_policies_')",
+                                "schema": {
+                                    "properties": {
+                                        "@@odata.context": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "items": {
+                                                "properties": {
+                                                    "conditions": {
+                                                        "properties": {
+                                                            "applications": {
+                                                                "properties": {
+                                                                    "excludeApplications": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeApplications": {
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeUserActions": {
+                                                                        "type": "array"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            },
+                                                            "clientAppTypes": {
+                                                                "type": "array"
+                                                            },
+                                                            "deviceStates": {},
+                                                            "locations": {},
+                                                            "platforms": {},
+                                                            "signInRiskLevels": {
+                                                                "type": "array"
+                                                            },
+                                                            "users": {
+                                                                "properties": {
+                                                                    "excludeGroups": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "excludeRoles": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "excludeUsers": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeGroups": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeRoles": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeUsers": {
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "type": "array"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "createdDateTime": {},
+                                                    "displayName": {
+                                                        "type": "string"
+                                                    },
+                                                    "grantControls": {
+                                                        "properties": {
+                                                            "builtInControls": {
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "type": "array"
+                                                            },
+                                                            "customAuthenticationFactors": {
+                                                                "type": "array"
+                                                            },
+                                                            "operator": {
+                                                                "type": "string"
+                                                            },
+                                                            "termsOfUse": {
+                                                                "type": "array"
+                                                            }
+                                                        },
+                                                        "type": [
+                                                            "object",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "modifiedDateTime": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "sessionControls": {},
+                                                    "state": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Parse_response_from_key_vault": {
+                            "runAfter": {
+                                "GET_client_secret_from_key_vault_using_managed_identity": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('GET_Client_Secret_from_Key_Vault_using_Managed_Identity')",
+                                "schema": {
+                                    "properties": {
+                                        "attributes": {
+                                            "properties": {
+                                                "created": {
+                                                    "type": "integer"
+                                                },
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "recoveryLevel": {
+                                                    "type": "string"
+                                                },
+                                                "updated": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "onedriveforbusiness": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]",
+                                "connectionName": "onedriveforbusiness-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

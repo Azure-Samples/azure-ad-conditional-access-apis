@@ -1,0 +1,393 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "301_conditionalaccess_policy_emergency_account_automation",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "AutoPilotConditionalAccessKeyVaultClientCredentials": {
+                            "defaultValue": "https://autopilotcavault1.vault.azure.net/secrets/AutoPilotConditionalAccessClientSecret/7d2f9e6b1aae48818f07faf56ce839a2",
+                            "type": "String"
+                        },
+                        "ClientID": {
+                            "defaultValue": "3ad0fe30-3640-4364-a39a-bd1fae04ac9a",
+                            "type": "String"
+                        },
+                        "EmergencyAccountsGroupObjectID": {
+                            "defaultValue": "f753047e-de31-4c74-a6fb-c38589047723",
+                            "type": "String"
+                        },
+                        "TenantID": {
+                            "defaultValue": "638f6240-1182-4adb-a12a-fdb1c768d7f2",
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "Schedule_automation_of_emergency_account_management_within_conditional_access": {
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 1
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "For_each_conditional_access_policy": {
+                            "foreach": "@body('Parse_All_Conditional_Access_Policies')?['value']",
+                            "actions": {
+                                "Check_if_a_conditional_access_policy_has_exclusion_for_emergency_accounts": {
+                                    "actions": {},
+                                    "runAfter": {},
+                                    "else": {
+                                        "actions": {
+                                            "Check_if_the_conditional_access_policy_was_updated_successfully": {
+                                                "actions": {
+                                                    "Post_a_message_to_Team_channel_notifying_remediation_for_emergency_account": {
+                                                        "runAfter": {},
+                                                        "type": "ApiConnection",
+                                                        "inputs": {
+                                                            "body": {
+                                                                "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"EMERGENCY ACCOUNT!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Policy missing emergency account was remediated successfully. No action needed.**\"\n                        },\n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{item()?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{item()?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{item()?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A remediation action for excluding emergency account within conditional access policy was completed successfully.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                                "recipient": {
+                                                                    "channelId": "19:dccc99724af042b5b4ffc33b13241fe0@thread.tacv2"
+                                                                }
+                                                            },
+                                                            "host": {
+                                                                "connection": {
+                                                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method": "post",
+                                                            "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                                            "queries": {
+                                                                "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "runAfter": {
+                                                    "Exclude_emergency_accounts_within_conditional_access_policies": [
+                                                        "Succeeded"
+                                                    ]
+                                                },
+                                                "else": {
+                                                    "actions": {
+                                                        "Post_a_message_to_Team_channel_that_remediation_failed_but_scheduled_for_retry": {
+                                                            "runAfter": {},
+                                                            "type": "ApiConnection",
+                                                            "inputs": {
+                                                                "body": {
+                                                                    "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"EMERGENCY ACCOUNT!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Policy missing emergency account was remediated successfully. No action needed**\"\n                        },\n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{item()?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{item()?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{item()?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A remediation action for excluding emergency account within conditional access policy was completed successfully.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                                    "recipient": {
+                                                                        "channelId": "19:dccc99724af042b5b4ffc33b13241fe0@thread.tacv2"
+                                                                    }
+                                                                },
+                                                                "host": {
+                                                                    "connection": {
+                                                                        "name": "@parameters('$connections')['teams']['connectionId']"
+                                                                    }
+                                                                },
+                                                                "method": "post",
+                                                                "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                                                "queries": {
+                                                                    "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "expression": {
+                                                    "and": [
+                                                        {
+                                                            "equals": [
+                                                                "@outputs('Exclude_emergency_accounts_within_conditional_access_policies')['statusCode']",
+                                                                204
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "type": "If"
+                                            },
+                                            "Exclude_emergency_accounts_within_conditional_access_policies": {
+                                                "runAfter": {},
+                                                "type": "Http",
+                                                "inputs": {
+                                                    "authentication": {
+                                                        "audience": "https://graph.microsoft.com",
+                                                        "clientId": "@parameters('ClientID')",
+                                                        "secret": "@body('Parse_response_from_key_vault')?['value']",
+                                                        "tenant": "@parameters('TenantID')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
+                                                    "body": {
+                                                        "conditions": {
+                                                            "users": {
+                                                                "excludeGroups": [
+                                                                    "@{parameters('EmergencyAccountsGroupObjectID')}"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "headers": {
+                                                        "Content-Type": "application/json"
+                                                    },
+                                                    "method": "PATCH",
+                                                    "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies/@{items('For_each_Conditional_Access_Policy')?['id']}"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "contains": [
+                                                    "@item()?['conditions']?['users']?['excludeGroups']",
+                                                    "@parameters('EmergencyAccountsGroupObjectID')"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            },
+                            "runAfter": {
+                                "Parse_all_conditional_access_policies": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Foreach"
+                        },
+                        "GET_all_conditional_access_policies_": {
+                            "runAfter": {
+                                "Parse_response_from_key_vault": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://graph.microsoft.com",
+                                    "clientId": "@parameters('ClientID')",
+                                    "secret": "@body('Parse_response_from_key_vault')?['value']",
+                                    "tenant": "@parameters('TenantID')",
+                                    "type": "ActiveDirectoryOAuth"
+                                },
+                                "method": "GET",
+                                "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
+                            }
+                        },
+                        "GET_client_secret_from_key_vault_using_managed_identity": {
+                            "runAfter": {},
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://vault.azure.net",
+                                    "identity": "Managed Identity",
+                                    "type": "ManagedServiceIdentity"
+                                },
+                                "method": "GET",
+                                "queries": {
+                                    "api-version": "2016-10-01"
+                                },
+                                "uri": "@parameters('AutoPilotConditionalAccessKeyVaultClientCredentials')"
+                            }
+                        },
+                        "Parse_all_conditional_access_policies": {
+                            "runAfter": {
+                                "GET_all_conditional_access_policies_": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('GET_all_conditional_access_policies_')",
+                                "schema": {
+                                    "properties": {
+                                        "@@odata.context": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "items": {
+                                                "properties": {
+                                                    "conditions": {
+                                                        "properties": {
+                                                            "applications": {
+                                                                "properties": {
+                                                                    "excludeApplications": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeApplications": {
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeUserActions": {
+                                                                        "type": "array"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            },
+                                                            "clientAppTypes": {
+                                                                "type": "array"
+                                                            },
+                                                            "deviceStates": {},
+                                                            "locations": {},
+                                                            "platforms": {},
+                                                            "signInRiskLevels": {
+                                                                "type": "array"
+                                                            },
+                                                            "users": {
+                                                                "properties": {
+                                                                    "excludeGroups": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "excludeRoles": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "excludeUsers": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeGroups": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeRoles": {
+                                                                        "type": "array"
+                                                                    },
+                                                                    "includeUsers": {
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "type": "array"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "createdDateTime": {},
+                                                    "displayName": {
+                                                        "type": "string"
+                                                    },
+                                                    "grantControls": {
+                                                        "properties": {
+                                                            "builtInControls": {
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "type": "array"
+                                                            },
+                                                            "customAuthenticationFactors": {
+                                                                "type": "array"
+                                                            },
+                                                            "operator": {
+                                                                "type": "string"
+                                                            },
+                                                            "termsOfUse": {
+                                                                "type": "array"
+                                                            }
+                                                        },
+                                                        "type": [
+                                                            "object",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "modifiedDateTime": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "sessionControls": {},
+                                                    "state": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Parse_response_from_key_vault": {
+                            "runAfter": {
+                                "GET_client_secret_from_key_vault_using_managed_identity": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@body('GET_Client_Secret_from_Key_Vault_using_Managed_Identity')",
+                                "schema": {
+                                    "properties": {
+                                        "attributes": {
+                                            "properties": {
+                                                "created": {
+                                                    "type": "integer"
+                                                },
+                                                "enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "recoveryLevel": {
+                                                    "type": "string"
+                                                },
+                                                "updated": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "teams": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]",
+                                "connectionName": "teams-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

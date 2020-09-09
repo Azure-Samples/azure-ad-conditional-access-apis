@@ -1,0 +1,460 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {  
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "301-conditionalaccess-policy-paste-automation",
+            "location": "[resourceGroup().location]",    
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "AutoPilotConditionalAccessKeyVaultClientCredentials": {
+                            "defaultValue": "https://autopilotcavault2.vault.azure.net/secrets/AutoPilotConditionalAccessClientSecret/04e3b95b7f0e49dea10e4189b5374595",
+                            "type": "String"
+                        },
+                        "ClientID": {
+                            "defaultValue": "3ad0fe30-3640-4364-a39a-bd1fae04ac9a",
+                            "type": "String"
+                        },
+                        "TenantID": {
+                            "defaultValue": "638f6240-1182-4adb-a12a-fdb1c768d7f2",
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_file_is_created": {
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 1
+                            },
+                            "metadata": {
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTDAILMIG3AUBVF27BDXT5O6LSJS": "/ConditionalAccess/PROD",
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTF7PD7RYZPMM5DYP45B2QYYPN65": "/AI Hero/AzureAD/ConditionalAccess/Restore"
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/datasets/default/triggers/onnewfilev2",
+                                "queries": {
+                                    "folderId": "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTDAILMIG3AUBVF27BDXT5O6LSJS",
+                                    "includeSubfolders": false,
+                                    "inferContentType": true,
+                                    "simulate": false
+                                }
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Check_for_approval_of_copy-paste_action_from_PPE_to_PROD": {
+                            "actions": {
+                                "Check_if_the_conditional_access_policy_was_pasted_successfully": {
+                                    "actions": {
+                                        "Delete_file_after_successful_copy-paste_action": {
+                                            "runAfter": {
+                                                "Post_to_Team_channel_that_the_copy-paste_action_was_completed_successfully": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "delete",
+                                                "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(triggerOutputs()['headers']['x-ms-file-id']))}"
+                                            }
+                                        },
+                                        "Parse_response_from_paste_conditional_access_policy_action": {
+                                            "runAfter": {},
+                                            "type": "ParseJson",
+                                            "inputs": {
+                                                "content": "@body('Paste_conditional_access_policy')",
+                                                "schema": {
+                                                    "properties": {
+                                                        "createdDateTime": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "displayName": {
+                                                            "type": "string"
+                                                        },
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "modifiedDateTime": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "state": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "Post_to_Team_channel_that_the_copy-paste_action_was_completed_successfully": {
+                                            "runAfter": {
+                                                "Parse_response_from_paste_conditional_access_policy_action": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "body": {
+                                                    "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"COPY-PASTE COMPLETED!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Copy-paste action completed successfully**\"\n                        },\n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{body('Parse_response_from_paste_conditional_access_policy_action')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{body('Parse_response_from_paste_conditional_access_policy_action')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{body('Parse_response_from_paste_conditional_access_policy_action')?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A copy-paste action for Conditional Access policy was completed successfully.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                    "recipient": {
+                                                        "channelId": "19:9120f93514ec41679d8f2c34b9fa536e@thread.tacv2"
+                                                    }
+                                                },
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['teams']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                                "queries": {
+                                                    "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Paste_conditional_access_policy": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else": {
+                                        "actions": {
+                                            "If_invalid_application_id": {
+                                                "actions": {
+                                                    "Post_message_in_Team_channel_that_policy_contains_un-supported_application_ids": {
+                                                        "runAfter": {},
+                                                        "type": "ApiConnection",
+                                                        "inputs": {
+                                                            "body": {
+                                                                "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"COPY-PASTE FAILED\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Copy-paste action failed**\"\n                        },\n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['state']}\"\n                        },\n                        {\n                            \"title\": \"Error message\",\n                            \"value\": \"@{body('Parse_error_response')?['error']?['message']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A copy-paste action for Conditional Access policy has failed. The conditional access policy JSON contains line of business application IDs that could not be pasted to PROD environment.  Message also reported to secops@contoso.com\"\n\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                                "recipient": {
+                                                                    "channelId": "19:9120f93514ec41679d8f2c34b9fa536e@thread.tacv2"
+                                                                }
+                                                            },
+                                                            "host": {
+                                                                "connection": {
+                                                                    "name": "@parameters('$connections')['teams']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method": "post",
+                                                            "path": "/flowbot/actions/notification/recipienttypes/channel",
+                                                            "queries": {
+                                                                "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "runAfter": {
+                                                    "Parse_error_response": [
+                                                        "Succeeded"
+                                                    ]
+                                                },
+                                                "expression": {
+                                                    "and": [
+                                                        {
+                                                            "contains": [
+                                                                "@body('Parse_error_response')?['error']?['message']",
+                                                                "1034: Policy contains invalid applications"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "type": "If"
+                                            },
+                                            "Parse_error_response": {
+                                                "runAfter": {},
+                                                "type": "ParseJson",
+                                                "inputs": {
+                                                    "content": "@body('Paste_conditional_access_policy')",
+                                                    "schema": {
+                                                        "properties": {
+                                                            "error": {
+                                                                "properties": {
+                                                                    "code": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "innerError": {
+                                                                        "properties": {
+                                                                            "date": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "request-id": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "type": "object"
+                                                                    },
+                                                                    "message": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@outputs('Paste_conditional_access_policy')['statusCode']",
+                                                    201
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "GET_Client_Secret_from_Key_Vault_using_Managed_Identity": {
+                                    "runAfter": {},
+                                    "type": "Http",
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://vault.azure.net",
+                                            "identity": "ManagedServiceIdentity",
+                                            "type": "ManagedServiceIdentity"
+                                        },
+                                        "method": "GET",
+                                        "queries": {
+                                            "api-version": "2016-10-01"
+                                        },
+                                        "uri": "@parameters('AutoPilotConditionalAccessKeyVaultClientCredentials')"
+                                    }
+                                },
+                                "Parse_Response_from_Key_Vault": {
+                                    "runAfter": {
+                                        "GET_Client_Secret_from_Key_Vault_using_Managed_Identity": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "ParseJson",
+                                    "inputs": {
+                                        "content": "@body('GET_Client_Secret_from_Key_Vault_using_Managed_Identity')",
+                                        "schema": {
+                                            "properties": {
+                                                "attributes": {
+                                                    "properties": {
+                                                        "created": {
+                                                            "type": "integer"
+                                                        },
+                                                        "enabled": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "recoveryLevel": {
+                                                            "type": "string"
+                                                        },
+                                                        "updated": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "Paste_conditional_access_policy": {
+                                    "runAfter": {
+                                        "Set_state_of_pasted_JSON_file_to_report-only": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Http",
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://graph.microsoft.com",
+                                            "clientId": "@parameters('ClientID')",
+                                            "secret": "@body('Parse_Response_from_Key_Vault')?['value']",
+                                            "tenant": "@parameters('TenantID')",
+                                            "type": "ActiveDirectoryOAuth"
+                                        },
+                                        "body": "@outputs('Set_state_of_pasted_JSON_file_to_report-only')",
+                                        "headers": {
+                                            "Content-Type": "application/json"
+                                        },
+                                        "method": "POST",
+                                        "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
+                                    }
+                                },
+                                "Remove_createdDateTime_property_from_pasted_JSON_file": {
+                                    "runAfter": {
+                                        "Remove_id_read-only_property_from_pasted_JSON_file": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(outputs('Remove_id_read-only_property_from_pasted_JSON_file'),'createdDateTime')"
+                                },
+                                "Remove_id_read-only_property_from_pasted_JSON_file": {
+                                    "runAfter": {
+                                        "Parse_Response_from_Key_Vault": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(body('Parse_the_Conditional_Access_Policy_marked_for_copy_paste'),'id')"
+                                },
+                                "Remove_modifiedDateTime_property_from_pasted_JSON_file": {
+                                    "runAfter": {
+                                        "Remove_createdDateTime_property_from_pasted_JSON_file": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(outputs('Remove_createdDateTime_property_from_pasted_JSON_file'),'modifiedDateTime')"
+                                },
+                                "Set_state_of_pasted_JSON_file_to_report-only": {
+                                    "runAfter": {
+                                        "Remove_modifiedDateTime_property_from_pasted_JSON_file": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@setProperty(outputs('Remove_modifiedDateTime_property_from_pasted_JSON_file'),'state','enabledForReportingButNotEnforced')"
+                                }
+                            },
+                            "runAfter": {
+                                "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@body('Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response')?['data']?['action']",
+                                            "approve"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Parse_the_conditional_access_policy_marked_for_copy_paste": {
+                            "runAfter": {},
+                            "type": "ParseJson",
+                            "inputs": {
+                                "content": "@json(triggerBody())",
+                                "schema": {
+                                    "properties": {
+                                        "createdDateTime": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "displayName": {
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "modifiedDateTime": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "state": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": {
+                            "runAfter": {
+                                "Parse_the_conditional_access_policy_marked_for_copy_paste": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnectionWebhook",
+                            "inputs": {
+                                "body": {
+                                    "body": {
+                                        "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"https://raw.githubusercontent.com/videor/AutoPilotConditionalAccess/master/AutoPilotConditionalAccess/azure-quickstart-templates/301-conditionalaccess-alerts-automation/images/Alert.PNG\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Alert: Approval request to copy-paste a conditional access policy from PPE to PROD**\"\n                        },     \n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{body('Parse_the_conditional_access_policy_marked_for_copy_paste')?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A new conditional access policy copy-paste process was initiated. Copy-paste of conditional access policy from PPE to PROD requires approval from one of the members in this channel.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ActionSet\",\n                    \"actions\": [\n                        {\n                            \"type\": \"Action.Submit\",\n                            \"title\": \"Approve copy-paste of conditional access policy from PPE to PROD\",\n                            \"style\": \"positive\",\n                            \"data\": {\n                                \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                \"action\": \"approve\"\n                            }\n                        },\n                        {\n                            \"type\": \"Action.ShowCard\",\n                            \"title\": \"Reject copy-paste of conditional access policy\",\n                            \"style\": \"destructive\",\n                            \"card\": {\n                                \"type\": \"AdaptiveCard\",\n                                \"body\": [\n                                    {\n                                        \"type\": \"Input.Text\",\n                                        \"id\": \"RejectCommentID\",\n                                        \"placeholder\": \"Please specify an appropriate reason for rejecting copy-paste of conditional access policy from PPE to PROD.\",\n                                        \"isMultiline\": true\n                                    }\n                                ],\n                                \"actions\": [\n                                    {\n                                        \"type\": \"Action.Submit\",\n                                        \"title\": \"Send\",\n                                        \"data\": {\n                                            \"id\": \"_qkQW8dJlUeLVi7ZMEzYVw\",\n                                            \"action\": \"reject\"\n                                        }\n                                    }\n                                ],\n                                \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\"\n                            }\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                        "recipient": {
+                                            "channelId": "19:9120f93514ec41679d8f2c34b9fa536e@thread.tacv2"
+                                        },
+                                        "shouldUpdateCard": true,
+                                        "updateMessage": "Your approval/rejection decision is noted."
+                                    },
+                                    "notificationUrl": "@{listCallbackUrl()}"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['teams']['connectionId']"
+                                    }
+                                },
+                                "path": "/flowbot/actions/flowcontinuation/recipienttypes/channel/$subscriptions",
+                                "queries": {
+                                    "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "onedriveforbusiness": {                            
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]",
+                                "connectionName": "onedriveforbusiness-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]"
+                            },
+                            "teams": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]",
+                                "connectionName": "teams-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
