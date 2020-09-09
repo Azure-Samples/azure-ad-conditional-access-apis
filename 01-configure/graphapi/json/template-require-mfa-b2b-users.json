@@ -1,0 +1,38 @@
+{
+    "displayName": "Template 3 - Require MFA for Guest Access",
+    "state": "enabledForReportingButNotEnforced",
+    "sessionControls": null,
+    "conditions": {
+        "signInRiskLevels": [],
+        "clientAppTypes": [],
+        "platforms": null,
+        "locations": null,
+        "applications": {
+            "includeApplications": [
+                "All"
+            ],
+            "excludeApplications": [],
+            "includeUserActions": []
+        },
+        "users": {
+            "includeUsers": [
+                "GuestsOrExternalUsers"
+            ],
+            "excludeUsers": [],
+            "includeGroups": [],
+            "excludeGroups": [
+                "f753047e-de31-4c74-a6fb-c38589047723"
+            ],
+            "includeRoles": [],
+            "excludeRoles": []
+        }
+    },
+    "grantControls": {
+        "operator": "OR",
+        "builtInControls": [
+            "mfa"
+        ],
+        "customAuthenticationFactors": [],
+        "termsOfUse": []
+    }
+}

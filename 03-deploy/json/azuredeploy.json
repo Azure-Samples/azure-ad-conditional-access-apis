@@ -1,0 +1,397 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {  
+    },
+    "variables": {},
+    "resources": [
+  {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "301-conditionalaccess-policy-blueprint-automation",
+            "location": "[resourceGroup().location]",    
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "AutoPilotConditionalAccessKeyVaultClientCredentials": {
+                            "defaultValue": "https://autopilotcavault2.vault.azure.net/secrets/AutoPilotConditionalAccessClientSecret/04e3b95b7f0e49dea10e4189b5374595",
+                            "type": "String"
+                        },
+                        "ClientID": {
+                            "defaultValue": "3ad0fe30-3640-4364-a39a-bd1fae04ac9a",
+                            "type": "String"
+                        },
+                        "TenantID": {
+                            "defaultValue": "638f6240-1182-4adb-a12a-fdb1c768d7f2",
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_new_conditional_access_policy_blueprint_is_added_": {
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 1
+                            },
+                            "metadata": {
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTF7PD7RYZPMM5DYP45B2QYYPN65": "/ConditionalAccess/Blueprint",
+                                "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTHRYPY3ZSMUPRAYKNRXXBM73WEI": "/ConditionalAccess/Blueprint"
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['onedriveforbusiness_1']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/datasets/default/triggers/onnewfilev2",
+                                "queries": {
+                                    "folderId": "b!S_mQ8pRickKStdgCwQA2ZYs5CwfTlTdFgOHtghxQUT-NGQ06AnNzSqHWQhBs6nsx.01DNPMLTHRYPY3ZSMUPRAYKNRXXBM73WEI",
+                                    "includeSubfolders": false,
+                                    "inferContentType": true,
+                                    "simulate": false
+                                }
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Condition": {
+                            "actions": {
+                                "Check_if_deployment_is_successful": {
+                                    "actions": {
+                                        "Parse_newly_deployed_conditional_access_policy_details": {
+                                            "runAfter": {},
+                                            "type": "ParseJson",
+                                            "inputs": {
+                                                "content": "@body('Deploy_new_conditional_access_policy_blueprint_to_branch_office_and_subsidiaries')",
+                                                "schema": {
+                                                    "properties": {
+                                                        "createdDateTime": {
+                                                            "type": "string"
+                                                        },
+                                                        "displayName": {
+                                                            "type": "string"
+                                                        },
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "modifiedDateTime": {},
+                                                        "state": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "Post_an_adaptive_card_to_a_Team_channel_that_deployment_was_successful": {
+                                            "runAfter": {
+                                                "Parse_newly_deployed_conditional_access_policy_details": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "body": {
+                                                    "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"BLUEPRINT DEPLOYED!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Blueprint deployment completed successfully**\"\n                        },\n                        {\n                            \"title\": \"Created Date\",\n                            \"value\": \"@{body('Parse_newly_deployed_conditional_access_policy_details')?['createdDateTime']}\"\n                        },\n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{body('Parse_newly_deployed_conditional_access_policy_details')?['displayName']}\"\n                        },\n                        {\n                            \"title\": \"Policy ID\",\n                            \"value\": \"@{body('Parse_newly_deployed_conditional_access_policy_details')?['id']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{body('Parse_newly_deployed_conditional_access_policy_details')?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"Conditional Access policy blueprint was deployed successfully.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                    "recipient": {
+                                                        "channelId": "19:88c92e9154914f2f865992d5569eb520@thread.tacv2"
+                                                    }
+                                                },
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['teams_3']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                                "queries": {
+                                                    "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Deploy_new_conditional_access_policy_blueprint_to_branch_office_and_subsidiaries": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "else": {
+                                        "actions": {
+                                            "Post_an_adaptive_card_to_a_Team_channel_that_deployment_failed": {
+                                                "runAfter": {},
+                                                "type": "ApiConnection",
+                                                "inputs": {
+                                                    "body": {
+                                                        "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"BLUEPRINT DEPLOYMENT FAILED!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Blueprint deployment failed**\"\n                        },        \n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"Conditional Access policy deployment failed.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                        "recipient": {
+                                                            "channelId": "19:88c92e9154914f2f865992d5569eb520@thread.tacv2"
+                                                        }
+                                                    },
+                                                    "host": {
+                                                        "connection": {
+                                                            "name": "@parameters('$connections')['teams_3']['connectionId']"
+                                                        }
+                                                    },
+                                                    "method": "post",
+                                                    "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                                    "queries": {
+                                                        "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@outputs('Deploy_new_conditional_access_policy_blueprint_to_branch_office_and_subsidiaries')['statusCode']",
+                                                    201
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "Deploy_new_conditional_access_policy_blueprint_to_branch_office_and_subsidiaries": {
+                                    "runAfter": {
+                                        "Remove_modifiedDateTime_property_from_blueprint_if_it_exists": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Http",
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://graph.microsoft.com",
+                                            "clientId": "@parameters('ClientID')",
+                                            "secret": "@body('Parse_response_from_key_vault')?['value']",
+                                            "tenant": "@parameters('TenantID')",
+                                            "type": "ActiveDirectoryOAuth"
+                                        },
+                                        "body": "@outputs('Remove_modifiedDateTime_property_from_blueprint_if_it_exists')",
+                                        "headers": {
+                                            "Content-Type": "application/json"
+                                        },
+                                        "method": "POST",
+                                        "uri": "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
+                                    }
+                                },
+                                "GET_client_secret_from_key_vault_using_managed_identity": {
+                                    "runAfter": {},
+                                    "type": "Http",
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://vault.azure.net",
+                                            "identity": "Managed Identity",
+                                            "type": "ManagedServiceIdentity"
+                                        },
+                                        "method": "GET",
+                                        "queries": {
+                                            "api-version": "2016-10-01"
+                                        },
+                                        "uri": "@parameters('AutoPilotConditionalAccessKeyVaultClientCredentials')"
+                                    }
+                                },
+                                "Parse_response_from_key_vault": {
+                                    "runAfter": {
+                                        "GET_client_secret_from_key_vault_using_managed_identity": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "ParseJson",
+                                    "inputs": {
+                                        "content": "@body('GET_client_secret_from_key_vault_using_managed_identity')",
+                                        "schema": {
+                                            "properties": {
+                                                "attributes": {
+                                                    "properties": {
+                                                        "created": {
+                                                            "type": "integer"
+                                                        },
+                                                        "enabled": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "recoveryLevel": {
+                                                            "type": "string"
+                                                        },
+                                                        "updated": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "Remove_createdDateTime_property_from_blueprint_if_it_exists": {
+                                    "runAfter": {
+                                        "Remove_id_read-only_property_from_blueprint_if_it_exists": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(outputs('Remove_id_read-only_property_from_blueprint_if_it_exists'),'createdDateTime')"
+                                },
+                                "Remove_id_read-only_property_from_blueprint_if_it_exists": {
+                                    "runAfter": {
+                                        "Set_conditional_access_policy_blueprint_state_to_report-only_mode": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(outputs('Set_conditional_access_policy_blueprint_state_to_report-only_mode'),'id')"
+                                },
+                                "Remove_modifiedDateTime_property_from_blueprint_if_it_exists": {
+                                    "runAfter": {
+                                        "Remove_createdDateTime_property_from_blueprint_if_it_exists": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@removeProperty(outputs('Remove_createdDateTime_property_from_blueprint_if_it_exists'),'modifiedDateTime')"
+                                },
+                                "Set_conditional_access_policy_blueprint_state_to_report-only_mode": {
+                                    "runAfter": {
+                                        "Parse_response_from_key_vault": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose",
+                                    "inputs": "@setProperty(body('Parse_the_new_conditional_access_policy_blueprint'),'state','enabledForReportingButNotEnforced')"
+                                }
+                            },
+                            "runAfter": {
+                                "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {
+                                    "Post_a_message_to_Team_channel_that_the_policy_blueprint_was_rejected_": {
+                                        "runAfter": {},
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "body": {
+                                                "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                           \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                            \"type\": \"Action.OpenUrl\",\n                                            \"title\": \"BLUEPRINT REJECTED!\",\n                                            \"url\": \"https://portal.azure.com\"\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Blueprint deployment rejected**\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"Conditional Access policy blueprint was rejected.  Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                                "recipient": {
+                                                    "channelId": "19:88c92e9154914f2f865992d5569eb520@thread.tacv2"
+                                                }
+                                            },
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['teams_3']['connectionId']"
+                                                }
+                                            },
+                                            "method": "post",
+                                            "path": "/flowbot/actions/adaptivecard/recipienttypes/channel",
+                                            "queries": {
+                                                "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@body('Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response')?['data']?['action']",
+                                            "approve"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+             "Parse_the_new_conditional_access_policy_blueprint": {
+                "inputs": {
+                    "content": "@json(triggerBody())",
+                    "schema": {
+                        "properties": {
+                            "displayName": {
+                                "type": "string"
+                            },
+                            "state": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {},
+                "type": "ParseJson"
+            },
+            "Post_an_Adaptive_Card_to_a_Teams_channel_and_wait_for_a_response": {
+                            "runAfter": {
+                                "Parse_the_new_conditional_access_policy_blueprint": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnectionWebhook",
+                            "inputs": {
+                                "body": {
+                                    "body": {
+                                        "messageBody": "{\n    \"type\": \"AdaptiveCard\",\n    \"body\": [\n        {\n            \"type\": \"Container\",\n            \"style\": \"emphasis\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"Large\",\n                                    \"weight\": \"Bolder\",\n                                    \"text\": \"**Azure Active Directory**\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"Image\",\n                                    \"url\": \"https://raw.githubusercontent.com/videor/AutoPilotConditionalAccess/master/AutoPilotConditionalAccess/azure-quickstart-templates/301-conditionalaccess-alerts-automation/images/Alert.PNG\",\n                                    \"altText\": \"Pending\",\n                                    \"height\": \"30px\"\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                }\n            ],\n            \"bleed\": true\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ColumnSet\",\n                    \"columns\": [\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"size\": \"ExtraLarge\",\n                                    \"text\": \"Conditional Access\",\n                                    \"wrap\": true\n                                },\n                                {\n                                    \"type\": \"TextBlock\",\n                                    \"spacing\": \"Small\",\n                                    \"size\": \"Small\",\n                                    \"weight\": \"Bolder\",\n                                    \"color\": \"Accent\",\n                                    \"text\": \"Alert\"\n                                }\n                            ],\n                            \"width\": \"stretch\"\n                        },\n                        {\n                            \"type\": \"Column\",\n                            \"items\": [\n                                {\n                                    \"type\": \"ActionSet\",\n                                    \"actions\": [\n                                        {\n                                        }\n                                    ]\n                                }\n                            ],\n                            \"width\": \"auto\"\n                        }\n                    ]\n                },\n                {\n                    \"type\": \"FactSet\",\n                    \"spacing\": \"Large\",\n                    \"facts\": [\n                        {\n                            \"title\": \"Type\",\n                            \"value\": \"**Alert: New blueprint has been added for Conditional Access Policy.**\"\n                        },     \n                        {\n                            \"title\": \"Policy Name\",\n                            \"value\": \"@{body('Parse_the_new_conditional_access_policy_blueprint')?['displayName']}\"\n                        },\n                       {\n                            \"title\": \"Policy State\",\n                            \"value\": \"@{body('Parse_the_new_conditional_access_policy_blueprint')?['state']}\"\n                        },\n                        {\n                            \"title\": \"Message\",\n                            \"value\": \"A new Conditional Access policy blueprint has been added. Adding a new conditional access policy requires approval from one of the members in this channel. Message also reported to secops@contoso.com\"\n                        }\n                    ]\n                }\n            ]\n        },\n        {\n            \"type\": \"Container\",\n            \"items\": [\n                {\n                    \"type\": \"ActionSet\",\n                    \"actions\": [\n                        {\n                            \"type\": \"Action.Submit\",\n                            \"title\": \"Approve blueprint deployment\",\n                            \"style\": \"positive\",\n                            \"data\": {\n                                \"id\": \"\",\n                                \"action\": \"approve\"\n                            }\n                        },\n                        {\n                            \"type\": \"Action.ShowCard\",\n                            \"title\": \"Reject blueprint deployment\",\n                            \"style\": \"destructive\",\n                            \"card\": {\n                                \"type\": \"AdaptiveCard\",\n                                \"body\": [\n                                    {\n                                        \"type\": \"Input.Text\",\n                                        \"id\": \"RejectCommentID\",\n                                        \"placeholder\": \"Please specify an appropriate reason for rejecting the new conditional access policy blueprint deployment.\",\n                                        \"isMultiline\": true\n                                    }\n                                ],\n                                \"actions\": [\n                                    {\n                                        \"type\": \"Action.Submit\",\n                                        \"title\": \"Send\",\n                                        \"data\": {\n                                            \"id\": \"\",\n                                            \"action\": \"reject\"\n                                        }\n                                    }\n                                ],\n                                \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\"\n                            }\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"version\": \"1.2\",\n    \"fallbackText\": \"This card requires Adaptive Cards v1.2 support to be rendered properly.\"\n}",
+                                        "recipient": {
+                                            "channelId": "19:88c92e9154914f2f865992d5569eb520@thread.tacv2"
+                                        },
+                                        "shouldUpdateCard": true,
+                                        "updateMessage": "Processing requested action. "
+                                    },
+                                    "notificationUrl": "@{listCallbackUrl()}"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['teams_2']['connectionId']"
+                                    }
+                                },
+                                "path": "/flowbot/actions/flowcontinuation/recipienttypes/channel/$subscriptions",
+                                "queries": {
+                                    "groupId": "0e4e4c2c-ab53-469b-8085-5ef462b8fae2"
+                                }
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "onedriveforbusiness_1": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]",
+                                "connectionName": "onedriveforbusiness-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/onedriveforbusiness')]"
+                            },
+                            "teams_2": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]",
+                                "connectionName": "teams-1",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]"
+                            },
+                            "teams_3": {
+                                "connectionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]",
+                                "connectionName": "teams-2",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/teams')]"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

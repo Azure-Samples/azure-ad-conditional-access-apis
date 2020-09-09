@@ -1,0 +1,46 @@
+{
+    "displayName": "Template 5 - Require Trusted Device for app access",
+    "state": "enabledForReportingButNotEnforced",
+    "sessionControls": null,
+    "conditions": {
+        "signInRiskLevels": [],
+        "clientAppTypes": [
+            "mobileAppsAndDesktopClients"
+        ],
+        "locations": null,
+        "applications": {
+            "includeApplications": [
+                "00000003-0000-0ff1-ce00-000000000000",
+                "00000002-0000-0ff1-ce00-000000000000"
+            ],
+            "excludeApplications": [],
+            "includeUserActions": []
+        },
+        "users": {
+            "includeGroups": [
+                "6c96716b-b32b-40b8-9009-49748bb6fcd5"
+            ],
+            "excludeGroups": [
+                "f753047e-de31-4c74-a6fb-c38589047723"
+            ],
+            "includeRoles": [],
+            "excludeRoles": []
+        },
+        "platforms": {
+            "includePlatforms": [
+                "windows",
+                "macOS"
+            ],
+            "excludePlatforms": []
+        }
+    },
+    "grantControls": {
+        "operator": "OR",
+        "builtInControls": [
+            "compliantDevice",
+            "domainJoinedDevice"
+        ],
+        "customAuthenticationFactors": [],
+        "termsOfUse": []
+    }
+}

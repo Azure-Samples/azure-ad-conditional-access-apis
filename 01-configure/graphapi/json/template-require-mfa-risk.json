@@ -1,0 +1,28 @@
+{ 
+    "displayName": "CA001: Require MFA for medium + sign-in risk", 
+    "state": "enabledForReportingButNotEnforced", 
+    "conditions": { 
+        "signInRiskLevels": [ "high" ,
+            "medium" 
+        ], 
+        "applications": { 
+            "includeApplications": [ 
+                "All" 
+            ] 
+        }, 
+        "users": { 
+            "includeGroups": [ 
+                "6c96716b-b32b-40b8-9009-49748bb6fcd5" 
+            ], 
+            "excludeGroups": [ 
+                "f753047e-de31-4c74-a6fb-c38589047723" 
+            ] 
+        } 
+    }, 
+    "grantControls": { 
+        "operator": "OR", 
+        "builtInControls": [ 
+            "mfa" 
+        ] 
+    } 
+} 

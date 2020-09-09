@@ -1,0 +1,43 @@
+{
+    "displayName": "Template 1 - MFA Registration Restrictions",
+    "state": "enabledForReportingButNotEnforced",
+    "sessionControls": null,
+    "conditions": {
+        "signInRiskLevels": [],
+        "clientAppTypes": [],
+        "platforms": null,
+        "applications": {
+            "includeUserActions": [
+                "urn:user:registersecurityinfo"
+            ]
+        },
+        "users": {
+            "includeGroups": [
+                "6c96716b-b32b-40b8-9009-49748bb6fcd5"
+            ],
+            "excludeGroups": [
+                "f753047e-de31-4c74-a6fb-c38589047723"
+            ],
+            "includeRoles": [],
+            "excludeRoles": []
+        },
+        "locations": {
+            "includeLocations": [
+                "All"
+            ],
+            "excludeLocations": [
+                "AllTrusted"
+            ]
+        }
+    },
+    "grantControls": {
+        "operator": "OR",
+        "builtInControls": [
+	    "mfa",
+            "compliantDevice",
+            "domainJoinedDevice"
+        ],
+        "customAuthenticationFactors": [],
+        "termsOfUse": []
+    }
+}

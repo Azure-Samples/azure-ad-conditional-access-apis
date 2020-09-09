@@ -1,0 +1,45 @@
+{
+    "displayName": "Template 4 - Enforce MAM Policies for Android and IOS",
+    "state": "enabledForReportingButNotEnforced",
+    "sessionControls": null,
+    "conditions": {
+        "clientAppTypes": [
+            "mobileAppsAndDesktopClients"
+        ],
+        "locations": null,
+        "applications": {
+            "includeApplications": [
+                "00000002-0000-0ff1-ce00-000000000000",
+                "00000003-0000-0ff1-ce00-000000000000"
+            ],
+            "excludeApplications": [],
+            "includeUserActions": []
+        },
+        "users": {
+            "includeGroups": [
+                "6c96716b-b32b-40b8-9009-49748bb6fcd5"
+            ],
+            "excludeGroups": [
+                "f753047e-de31-4c74-a6fb-c38589047723"
+            ],
+            "includeRoles": [],
+            "excludeRoles": []
+        },
+        "platforms": {
+            "includePlatforms": [
+                "android",
+                "iOS"
+            ],
+            "excludePlatforms": []
+        }
+    },
+    "grantControls": {
+        "operator": "OR",
+        "builtInControls": [
+            "approvedApplication",
+            "compliantApplication"
+        ],
+        "customAuthenticationFactors": [],
+        "termsOfUse": []
+    }
+}
