@@ -1,3 +1,11 @@
+---
+page_type: sample
+languages:
+- rest
+- powershell
+products:
+- azure-active-directory
+---
 # Conditional Access: Programmatic access
 
 Many organizations have expressed their need to manage as much of their environments like code as possible. Using Microsoft Graph you can treat Conditional Access policies like any other piece of code in your environment.
@@ -54,19 +62,23 @@ This example provides a mechanism to monitor Conditional Access policy changes o
 
 Automate the backup and restoration of Conditional Access policies with approvals in Teams using this example.
 
-- [Manage the backup and restore process of Conditional Access policies Microsoft Graph API calls](./05-manage/01-backup-restore/readme.md)
+- [Manage the backup and restore process of Conditional Access policies using Microsoft Graph API calls](./05-manage/01-backup-restore/readme.md)
 
 ### Emergency access accounts
 
 Multiple administrators may create Conditional Access policies and may forget to add your [emergency access accounts](https://docs.microsoft.com/azure/active-directory/users-groups-roles/directory-emergency-access) as an exclusion to those policies. This example ensures that all policies are updated to include your designated emergency access accounts.
 
-- [Manage the assignment of emergency access accounts to Conditional Access policies Microsoft Graph API calls](./05-manage/02-emergency-access/readme.md)
+- [Manage the assignment of emergency access accounts to Conditional Access policies using Microsoft Graph API calls](./05-manage/02-emergency-access/readme.md)
 
 ### Contingency planning
 
 Things don't always work the way you want, when that happens you need a way to get back to a state where work can continue. The following example provides you a way to revert your policies to a known good contingency plan and disable other Conditional Access policies.
 
 - [Manage the activation of Conditional Access contingency policies using Microsoft Graph API calls](./05-manage/03-contingency/readme.md)
+
+## Community contribution
+
+These samples are available in our [GitHub repository](https://github.com/Azure-Samples/azure-ad-conditional-access-apis). We are happy to support community contributions thorough GitHub Issues and Pull Requests.
 
 ## Next steps
 

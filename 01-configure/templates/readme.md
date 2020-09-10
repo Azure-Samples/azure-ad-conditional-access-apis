@@ -61,9 +61,7 @@ Select the following image to sign in with your Azure account and open the logic
 
 Logic App for Easy Configuration of Conditional Access Policies using Templates.
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-template-automation%2Fazuredeploy.json)
-
-/json/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F01-configure%2Ftemplates%2Fjson%2Fazuredeploy.json)
   
 1. In the portal, on the **Custom deployment** page, enter or select these values:
 
@@ -82,7 +80,7 @@ Logic App for Easy Configuration of Conditional Access Policies using Templates.
 
 ## Step 2: Authenticate your logic app to Azure AD with the right permissions
 
-This logic app uses managed identity for getting secrets from key vault in order to call Conditional Access APIs. Please look at [Authenticate your logic app to Azure AD with the right permissions](https://github.com/videor/AutoPilotConditionalAccess/tree/master/AutoPilotConditionalAccess/azure-quickstart-templates/docs) on how to create key vault and connect to managed identity. To learn more about how to use managed identities within Logic Apps, see the article [**Logic Apps and Managed Identities**](https://docs.microsoft.com/azure/logic-apps/create-managed-service-identity).
+This logic app uses Managed Identity to get secrets from Key Vault in order to call the Conditional Access APIs. For more information on configuring these features, see the steps in the article [Secure authentication for Conditional Access APIs](../../doc/readme.md).
 
 1. In the left-hand navigation pane, select Identity > User Assigned > Select Add.
 

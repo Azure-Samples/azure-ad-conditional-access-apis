@@ -59,15 +59,11 @@ Select the following image to sign in with your Azure account and open the logic
 
 ## Logic App for Backup
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-backup-restore-automation%2Fazuredeploy.json)
-
-/json/backup/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F05-manage%2F01-backup-restore%2Fjson%2Fbackup%2Fazuredeploy.json)
 
 ## Logic App for Restore
   
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-backup-restore-automation%2F301-conditionalaccess-policy-restore-automation%2Fazuredeploy.json)
-  
-/json/restore/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F05-manage%2F01-backup-restore%2Fjson%2Frestore%2Fazuredeploy.json)
 
 1. In the portal, on the **Custom deployment** page, enter or select these values:
 
@@ -86,7 +82,7 @@ Select the following image to sign in with your Azure account and open the logic
 
 ## Step 2: Authenticate your logic app to Azure AD with the right permissions
 
-This logic app uses managed identity for getting secrets from key vault in order to call Conditional Access APIs. For more information, see the article, [Authenticate your logic app to Azure AD with the right permissions](https://github.com/videor/AutoPilotConditionalAccess/tree/master/AutoPilotConditionalAccess/azure-quickstart-templates/docs) for steps to create key vault and connect to managed identity. To learn more on how to use managed identities within a logic app, see the article, [**Logic Apps and Managed Identities**](https://docs.microsoft.com/azure/logic-apps/create-managed-service-identity).
+This logic app uses Managed Identity to get secrets from Key Vault in order to call the Conditional Access APIs. For more information on configuring these features, see the steps in the article [Secure authentication for Conditional Access APIs](../../doc/readme.md).
 
 1. In the left-hand navigation pane, select Identity > User Assigned > Select Add.
 
