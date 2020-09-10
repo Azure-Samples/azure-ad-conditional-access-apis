@@ -4,7 +4,9 @@ languages:
 - rest
 - powershell
 products:
+- azure
 - azure-active-directory
+urlFragment: azure-ad-conditional-access-apis
 ---
 # Conditional Access: Programmatic access
 
