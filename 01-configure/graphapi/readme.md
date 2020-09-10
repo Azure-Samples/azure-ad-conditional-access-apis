@@ -1,12 +1,3 @@
----
-languages:
-- rest
-page_type: sample
-description: ""
-products:
-- azure
-- azure-active-directory
----
 # Configure Conditional Access policies using the Microsoft Graph API
 
 You can use the Conditional Access APIs to manage policies at scale. For example, you can:

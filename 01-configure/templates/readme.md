@@ -1,12 +1,3 @@
----
-languages:
-- rest
-page_type: sample
-description: ""
-products:
-- azure
-- azure-active-directory
----
 # Configure Conditional Access policies using templates based on Microsoft Graph APIs
 
 Intent: As an IT admin, I want to be able to easily configure Conditional Access policies within my pre-production environment.
