@@ -1,11 +1,9 @@
 ---
+page_type: sample
 languages:
 - rest
 - powershell
-page_type: sample
-description: "Use Conditional Access Graph APIs to manage policies like code. Automate approvals to promote policies from preproduction environments, backup and restore, monitor change, and plan ahead for emergencies."
 products:
-- azure
 - azure-active-directory
 ---
 # Conditional Access: Programmatic access

@@ -70,7 +70,7 @@ Here is how the page looks with the values used in this example:
 
 ## Step 2: Authenticate your logic app to Azure AD with the right permissions
 
-This logic app uses managed identity for getting secrets from key vault in order to call Conditional Access APIs. For more information, see the article, [Authenticate your logic app to Azure AD with the right permissions](https://github.com/videor/AutoPilotConditionalAccess/tree/master/AutoPilotConditionalAccess/azure-quickstart-templates/docs) for steps to create key vault and connect to managed identity. To learn more on how to use managed identities within a logic app, see the article, [**Logic Apps and Managed Identities**](https://docs.microsoft.com/azure/logic-apps/create-managed-service-identity).
+This logic app uses Managed Identity to get secrets from Key Vault in order to call the Conditional Access APIs. For more information on configuring these features, see the steps in the article [Secure authentication for Conditional Access APIs](../../doc/readme.md).
 
 1. In the left-hand navigation pane, select Identity > User Assigned > Select Add.
 
