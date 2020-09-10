@@ -61,9 +61,7 @@ Select the following image to sign in with your Azure account and open the logic
 
 Logic App for Easy Configuration of Conditional Access Policies using Templates.
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-template-automation%2Fazuredeploy.json)
-
-/json/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F01-configure%2Ftemplates%2Fjson%2Fazuredeploy.json)
   
 1. In the portal, on the **Custom deployment** page, enter or select these values:
 

@@ -55,9 +55,7 @@ If your Azure environment meets the prerequisites, and you're familiar with usin
 
 Select the following image to sign in with your Azure account and open the logic app in the Azure portal:
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-contingency-policies-automation%2Fazuredeploy.json)
-
-/json/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F05-manage%2F03-contingency%2Fjson%2Fazuredeploy.json)
 
 1. In the portal, on the **Custom deployment** page, enter or select these values:
 

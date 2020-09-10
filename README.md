@@ -1,3 +1,13 @@
+---
+languages:
+- rest
+- powershell
+page_type: sample
+description: "Use Conditional Access Graph APIs to manage policies like code. Automate approvals to promote policies from preproduction environments, backup and restore, monitor change, and plan ahead for emergencies."
+products:
+- azure
+- azure-active-directory
+---
 # Conditional Access: Programmatic access
 
 Many organizations have expressed their need to manage as much of their environments like code as possible. Using Microsoft Graph you can treat Conditional Access policies like any other piece of code in your environment.
