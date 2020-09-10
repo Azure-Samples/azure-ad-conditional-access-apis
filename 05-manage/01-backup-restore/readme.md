@@ -59,15 +59,11 @@ Select the following image to sign in with your Azure account and open the logic
 
 ## Logic App for Backup
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-backup-restore-automation%2Fazuredeploy.json)
-
-/json/backup/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F05-manage%2F01-backup-restore%2Fjson%2Fbackup%2Fazuredeploy.json)
 
 ## Logic App for Restore
   
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvideor%2FAutoPilotConditionalAccess%2Fmaster%2FAutoPilotConditionalAccess%2Fazure-quickstart-templates%2F301-conditionalaccess-policy-backup-restore-automation%2F301-conditionalaccess-policy-restore-automation%2Fazuredeploy.json)
-  
-/json/restore/azuredeploy.json
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-ad-conditional-access-apis%2Fmain%2F05-manage%2F01-backup-restore%2Fjson%2Frestore%2Fazuredeploy.json)
 
 1. In the portal, on the **Custom deployment** page, enter or select these values:
 
