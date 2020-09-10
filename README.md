@@ -4,7 +4,7 @@ Many organizations have expressed their need to manage as much of their environm
 
 Microsoft Graph provides a unified programmability model that organizations can use to interact with data in Microsoft 365, Windows 10, and Enterprise Mobility + Security. For more information about Microsoft Graph, see the article, [Overview of Microsoft Graph](https://docs.microsoft.com/graph/overview).
 
-![An image showing the primary resources and relationships that are part of the graph](./media/howto-conditional-access-apis/microsoft-graph.png)
+![An image showing the primary resources and relationships that are part of the graph](./media/microsoft-graph.png)
 
 The following examples are provided as is with no support. You can use these examples as a basis for tooling in your organization.
 
