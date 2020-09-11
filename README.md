@@ -8,7 +8,7 @@ products:
 - azure
 - azure-active-directory
 ---
-# Conditional Access: Programmatic access
+# Manage Conditional Access policies like code
 
 Many organizations have expressed their need to manage as much of their environments like code as possible. Using Microsoft Graph you can treat Conditional Access policies like any other piece of code in your environment.
 
@@ -80,7 +80,7 @@ Things don't always work the way you want, when that happens you need a way to g
 
 ## Community contribution
 
-These samples are available in our [GitHub repository](https://github.com/Azure-Samples/azure-ad-conditional-access-apis). We are happy to support community contributions thorough GitHub Issues and Pull Requests.
+We are happy to support community contributions thorough GitHub Issues and Pull Requests in this [GitHub repository](https://github.com/Azure-Samples/azure-ad-conditional-access-apis).
 
 ## Next steps
 
