@@ -139,6 +139,17 @@ Try the following challenge:
 
 :heavy_check_mark: Edit this logic app to delete the policy file in OneDrive template folder when the approval workflow selection is Reject action.
 
+Try creating and updating a Conditional Access policy using the following JSON templates:
+
+- [JSON template - Require MFA for administrative roles](../graphapi/json/template-require-mfa-admin-roles.json)
+- [JSON template - Require MFA for B2B and guest users](../graphapi/json/template-require-mfa-b2b-users.json)
+- [JSON template - Require MFA for security info registration](../graphapi/json/template-require-mfa-security-info-registration.json)
+- [JSON template - Require a trusted device for specific applications](../graphapi/json/template-require-trusted-device-app-access.json)
+- [JSON template - Require MFA on medium or high risk (Requires Azure AD Identity Protection)](../graphapi/json/template-require-mfa-risk.json)
+- [JSON template - Require MAM policy for Android and IOS devices](../graphapi/json/template-require-mam-android-ios.json)
+
+Preview features and new functionality are added to Conditional Access regularly, as they are added they become available first in the [Conditional Access API beta endpoint](https://docs.microsoft.com/graph/api/resources/conditionalaccesspolicy?view=graph-rest-beta).
+
 Next, [Configure Safe rollout of policies from pre-production to production with approval workflow](../../02-test/readme.md).
 
 For more information on the Conditional Access APIs, see the following documents:
