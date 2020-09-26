@@ -20,16 +20,16 @@ As a identity admin, you are probably looking for the simplest and most secure m
 
 The managed identities for Azure can help you with this requirement because managed identities:
 
-1. Eliminates the need for credentials.
-1. Rotate credentials automatically.
-1. Reduces your involvement in managing identities to a minimum.
+ * Eliminates the need for credentials.
+ * Rotate credentials automatically.
+ * Reduces your involvement in managing identities to a minimum.
 
 All Azure resources that support managed identities can obtain tokens to exchange data without having credentials in the code. The process consists of the following steps:
 
-Enable – Create the Managed Identity for the resource
-Grant access – Allow access to resources with Azure Role-Based Access Control (RBAC)
-Access - Perform the allowed actions
-Disable – Delete the Managed Identity
+ * Enable – Create the Managed Identity for the resource
+ * Grant access – Allow access to resources with Azure Role-Based Access Control (RBAC)
+ * Access - Perform the allowed actions
+ * Disable – Delete the Managed Identity
 
 Managed identity types
 
