@@ -4,7 +4,7 @@
     "sessionControls": null,
     "conditions": {
         "signInRiskLevels": [],
-        "clientAppTypes": [],
+        "clientAppTypes": ["All"],
         "platforms": null,
         "applications": {
             "includeUserActions": [
